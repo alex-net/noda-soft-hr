@@ -2,31 +2,38 @@
 
 namespace Manager;
 
+use Gateway\User as GUser;
+
 class User
 {
-    const limit = 10;
-
     /**
      * Возвращает пользователей старше заданного возраста.
+     *
      * @param int $ageFrom
+     *
      * @return array
      */
     function getUsers(int $ageFrom): array
     {
-        $ageFrom = (int)trim($ageFrom);
-
-        return \Gateway\User::getUsers($ageFrom);
+        return GUser::getUsers($ageFrom);
     }
 
     /**
      * Возвращает пользователей по списку имен.
+     *
+     * @param $names array Список имён пользователей ..
+     *
      * @return array
      */
-    public static function getByNames(): array
+    public static function getByNames(array $names): array
     {
+        # можно использовать вызов return GUser::getUserByNames($names) без цикла ... = уменьшение количества зпросов в базу
         $users = [];
-        foreach ($_GET['names'] as $name) {
-            $users[] = \Gateway\User::user($name);
+        foreach ($names as $name) {
+            $data = GUser::getUserByName($name);
+            if ($data) {
+                $users[] = $data;
+            }
         }
 
         return $users;
@@ -34,21 +41,16 @@ class User
 
     /**
      * Добавляет пользователей в базу данных.
-     * @param $users
+     *
+     * @param array $users Данные добавляемых пользователей
+     *
      * @return array
      */
-    public function users($users): array
+    public function addUsers(array $users): array
     {
         $ids = [];
-        \Gateway\User::getInstance()->beginTransaction();
         foreach ($users as $user) {
-            try {
-                \Gateway\User::add($user['name'], $user['lastName'], $user['age']);
-                \Gateway\User::getInstance()->commit();
-                $ids[] = \Gateway\User::getInstance()->lastInsertId();
-            } catch (\Exception $e) {
-                \Gateway\User::getInstance()->rollBack();
-            }
+            $ids[] = GUser::add($user['name'], $user['lastName'], $user['age']);
         }
 
         return $ids;
